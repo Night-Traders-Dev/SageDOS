@@ -7,20 +7,15 @@ Compiles all src/sage/*.sage modules into a single native ELF binary via
 the SageLang C backend (sage --compile).
 
 Usage:
-    ./sagemake [command] [flags]
-
-Commands:
-    build      Compile SageDOS to a native ELF (default)
-    check      Lint all .sage source files
-    test       Run the test suite
-    install    Install sagedos to /usr/local/bin
-    clean      Remove build artifacts
-    all        build → check → test
+    ./sagemake [flags]
 
 Flags:
+    --clean        Remove build artifacts
+    --build        Compile SageDOS to a native ELF
+    --run          Run SageDOS (compiled binary if exists, else via interpreter)
     --debug        Build with SAGE_DEBUG enabled
-    --skip-tests   Skip the test suite (used by all)
-    --rebuild-sage Force recompilation of the SageLang dep even if binary exists
+    --skip-tests   Skip the test suite
+    --rebuild-sage Force recompilation of the SageLang dep
 """
 
 import hashlib
@@ -103,13 +98,23 @@ SAGE_BIN: Path | None = None
 
 # SAGE_PATH includes src/sage so modules can import each other, plus the
 # SageLang stdlib (resolved once check_dependencies() locates the sage binary).
-SAGE_PATH_EXTRA: list[str] = [str(SRC_SAGE)]
+SAGE_PATH_EXTRA: list[str] = [str(SRC_SAGE), str(SRC_SAGE / "command_com")]
 
-# Modules compiled into the binary.
-# boot.sage is the entrypoint.
 MODULE_ORDER = [
     "bios_io.sage",
     "int21.sage",
+    "command_com/token.sage",
+    "command_com/lexer.sage",
+    "command_com/ast.sage",
+    "command_com/parser.sage",
+    "command_com/environment.sage",
+    "command_com/varstore.sage",
+    "command_com/filesystem.sage",
+    "command_com/commands.sage",
+    "command_com/process.sage",
+    "command_com/registry.sage",
+    "command_com/interpreter.sage",
+    "command_com/main.sage",
     "kernel.sage",
     "boot.sage",
 ]
@@ -393,33 +398,48 @@ def cmd_all(args: list[str]) -> None:
         cmd_test(args)
 
 
+def cmd_run(args: list[str]) -> None:
+    banner("run — SageDOS")
+    check_dependencies()
+    binary = BUILD_DIR / BINARY_NAME
+    if binary.exists():
+        section("Running native binary")
+        step(f"executing {binary.name}")
+        ok()
+        print()
+        subprocess.run([str(binary)])
+    else:
+        section("Running via Interpreter")
+        entrypoint = SRC_SAGE / "boot.sage"
+        step(f"sage {entrypoint.name}")
+        ok()
+        print()
+        subprocess.run([str(SAGE_BIN), str(entrypoint)], env=sage_env())
+
+
 # ── CLI dispatch ─────────────────────────────────────────────────────────────────────────
 
-commands: dict[str, callable] = {
-    "build":   cmd_build,
-    "check":   cmd_check,
-    "test":    cmd_test,
-    "install": cmd_install,
-    "clean":   cmd_clean,
-    "all":     cmd_all,
-}
-
-
 def main() -> None:
-    if len(sys.argv) < 2 or sys.argv[1] not in commands:
+    args = sys.argv[1:]
+    if not args or "--help" in args or "-h" in args:
         banner("SageDOS — sagemake")
-        print(f"  Usage:  ./sagemake {'|'.join(commands.keys())} [flags]")
+        print("  Usage:  ./sagemake [flags]")
         print()
         print("  Flags:")
+        print("    --clean          Remove build artifacts")
+        print("    --build          Compile SageDOS to a native ELF")
+        print("    --run            Run SageDOS")
         print("    --debug          Build with SAGE_DEBUG")
-        print("    --skip-tests     Skip test suite (used with 'all')")
         print("    --rebuild-sage   Force rebuild of SageLang dep")
         print()
-        sys.exit(0 if len(sys.argv) < 2 else 1)
+        sys.exit(0)
 
-    cmd  = sys.argv[1]
-    args = sys.argv[2:]
-    commands[cmd](args)
+    if "--clean" in args:
+        cmd_clean(args)
+    if "--build" in args:
+        cmd_build(args)
+    if "--run" in args:
+        cmd_run(args)
 
 
 if __name__ == "__main__":

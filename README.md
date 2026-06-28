@@ -35,3 +35,12 @@ SageDOS aims to emulate the MS-DOS 4.0 API (INT 21h services). While it doesn't 
 
 - **INT 21h**: System Calls (File I/O, Process, Memory)
 - **FAT File System**: Virtual or real FAT file system driver
+
+## Building and Running
+
+SageDOS uses `sagemake` to manage builds. You can clean artifacts, compile the OS to a native binary, and boot it using the flags:
+
+```bash
+# Clean, compile, and run SageDOS in one step
+./sagemake --clean --build --run
+```
