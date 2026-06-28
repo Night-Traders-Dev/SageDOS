@@ -14,5 +14,8 @@ proc main():
     
     # Phase 3: Boot the system
     kernel.boot()
+    
+    # Phase 4: Shutdown
+    kernel.shutdown()
 
 main()

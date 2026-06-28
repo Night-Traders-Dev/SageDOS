@@ -335,14 +335,19 @@ def cmd_test(args: list[str]) -> None:
     check_dependencies()
 
     suites = []
+    if TEST_DIR.exists():
+        for test_file in sorted(TEST_DIR.glob("*.sage")):
+            suites.append((test_file.stem, test_file))
+
+    if not suites:
+        step_warn("No tests found in tests/ directory")
+        return
 
     failed = []
     for label, path in suites:
         section(f"{label} suite")
-        if not path.exists():
-            step_warn(f"{path.name} not found — skipping")
-            continue
         step(path.name)
+        # Add src/sage and src/sage/command_com to SAGE_PATH via sage_env()
         result = subprocess.run(
             [str(SAGE_BIN), str(path)],
             capture_output=True, text=True, env=sage_env()
@@ -429,6 +434,7 @@ def main() -> None:
         print("    --clean          Remove build artifacts")
         print("    --build          Compile SageDOS to a native ELF")
         print("    --run            Run SageDOS")
+        print("    --test           Run the test suite")
         print("    --debug          Build with SAGE_DEBUG")
         print("    --rebuild-sage   Force rebuild of SageLang dep")
         print()
@@ -438,6 +444,8 @@ def main() -> None:
         cmd_clean(args)
     if "--build" in args:
         cmd_build(args)
+    if "--test" in args:
+        cmd_test(args)
     if "--run" in args:
         cmd_run(args)
 
