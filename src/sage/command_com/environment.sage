@@ -3,7 +3,6 @@
 #          current directory, search paths, and process state.
 
 import sys
-import io
 
 class Environment:
     proc init(self):
@@ -65,7 +64,7 @@ class Environment:
         return self.errorlevel
 
     proc chdir(self, path):
-        if io.isdir(path):
+        if io_isdir(path):
             self.cwd = path
             let v = self.vars
             v["CD"] = path

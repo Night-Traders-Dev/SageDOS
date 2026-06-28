@@ -37,7 +37,7 @@ proc run_interactive(process):
             print "Error: " + str(e)
 
 proc run_script(script_path, batch_args):
-    let source  = io.readfile(script_path)
+    let source  = io_readfile(script_path)
     if source == nil:
         print "SageBatch: File not found: " + script_path
         return

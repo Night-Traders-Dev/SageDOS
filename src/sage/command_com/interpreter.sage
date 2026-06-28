@@ -210,7 +210,7 @@ class Interpreter:
             let filename = v.expand(node.filename)
             let old_stdout = c.stdout
             if node.op == ">":
-                io.writefile(filename, "")
+                io_writefile(filename, "")
                 c.stdout = filename
             elif node.op == ">>":
                 c.stdout = filename
