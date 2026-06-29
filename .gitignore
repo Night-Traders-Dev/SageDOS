@@ -1,3 +1,14 @@
 /build/
 /deps/
 /ref/MS-DOS/
+err.txt
+out.txt
+test_ex.sage
+test_ex_bin
+_sagetest_dir/
+_pushd_test/
+_ifexist_dir/
+HELLO/
+*.swp
+*.swo
+.DS_Store
