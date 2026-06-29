@@ -3,7 +3,7 @@
 #
 # If no script is given, enters interactive command-line mode.
 # Phases: 0 (repo) ✓  1 (lexer) ✓  2 (parser) ✓  3 (interpreter) ✓
-#         4 (env) ✓   5 (commands) ✓  6 (redirect) ✓  7 (pipes) partial
+#         4 (env) ✓   5 (commands) ✓  6 (redirect) ✓  7 (pipes) ✓
 
 from token       import Token, TOK_WORD, TOK_STRING, TOK_VARIABLE, TOK_LABEL, TOK_OPERATOR, TOK_REDIRECT, TOK_PIPE, TOK_NEWLINE, TOK_EOF, TOK_AMP, TOK_PAREN_L, TOK_PAREN_R, TOK_AT
 from process     import BatchProcess

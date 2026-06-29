@@ -12,6 +12,9 @@ class Environment:
         self.cwd         = "/"  # current working directory
         let arr = []
         self.dir_stack   = arr
+        let arr2 = []
+        self.setlocal_stack = arr2
+        self.delayed_expansion = false
         self._init_defaults()
 
     proc _init_defaults(self):
@@ -64,12 +67,9 @@ class Environment:
         return self.errorlevel
 
     proc chdir(self, path):
-        if io_isdir(path):
-            self.cwd = path
-            let v = self.vars
-            v["CD"] = path
-        else:
-            raise "CD: Directory not found: " + path
+        self.cwd = path
+        let v = self.vars
+        v["CD"] = path
 
     proc render_prompt(self):
         let p = self.get_var("PROMPT")
@@ -81,3 +81,26 @@ class Environment:
         p = replace(p, "$Q", "=")
         p = replace(p, "$$", "$")
         return p
+
+    proc setlocal(self, flag):
+        let snapshot = {}
+        for k in dict_keys(self.vars):
+            snapshot[k] = self.vars[k]
+        
+        let frame = {}
+        frame["vars"] = snapshot
+        frame["cwd"] = self.cwd
+        frame["delayed_expansion"] = self.delayed_expansion
+        push(self.setlocal_stack, frame)
+        
+        if flag == "ENABLEDELAYEDEXPANSION":
+            self.delayed_expansion = true
+        elif flag == "DISABLEDELAYEDEXPANSION":
+            self.delayed_expansion = false
+
+    proc endlocal(self):
+        if len(self.setlocal_stack) > 0:
+            let frame = pop(self.setlocal_stack)
+            self.vars = frame["vars"]
+            self.cwd = frame["cwd"]
+            self.delayed_expansion = frame["delayed_expansion"]

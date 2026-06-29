@@ -1,0 +1,10 @@
+:MENU
+ECHO 1. Start
+ECHO 2. Exit
+SET /P CHOICE=Enter choice:
+IF %CHOICE%==1 GOTO START
+IF %CHOICE%==2 GOTO END
+GOTO MENU
+
+:START
+ECHO Starting...

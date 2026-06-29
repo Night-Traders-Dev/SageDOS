@@ -76,7 +76,9 @@ class Lexer:
             if ch == closer:
                 break
             buf = buf + ch
-        self.emit(TOK_VARIABLE, buf)
+        let t = Token(TOK_VARIABLE, buf, self.line)
+        t.is_delayed = delayed
+        push(self.tokens, t)
 
     proc scan_word(self, first_char):
         let buf = first_char

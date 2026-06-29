@@ -12,11 +12,36 @@ class FileSystem:
     proc normalize(self, path):
         return replace(path, "\\", "/")
 
-    proc resolve(self, path):
+    proc abs_path(self, path):
         let p = self.normalize(path)
+        let dos_path = ""
         if startswith(p, "/"):
-            return p
-        return self.env.cwd + "/" + p
+            dos_path = p
+        else:
+            if self.env.cwd == "/":
+                dos_path = "/" + p
+            else:
+                dos_path = self.env.cwd + "/" + p
+        # Basic normalize for ..
+        if endswith(dos_path, "/.."):
+            let parts = split(dos_path, "/")
+            if len(parts) > 2:
+                dos_path = "/" + join(slice(parts, 1, len(parts) - 2), "/")
+            else:
+                dos_path = "/"
+        if dos_path == "":
+            dos_path = "/"
+        return dos_path
+
+    proc resolve(self, path):
+        let dos_path = self.abs_path(path)
+                
+        # map DOS path to Linux path
+        if dos_path == "/":
+            return "."
+        if startswith(dos_path, "/"):
+            return "." + dos_path
+        return dos_path
 
     proc exists(self, path):
         return io_exists(self.resolve(path))
@@ -41,14 +66,17 @@ class FileSystem:
         io_writefile(res, existing + content)
 
     proc delete_file(self, path):
-        # AOT workaround: truncate file instead of deleting
-        io_writefile(self.resolve(path), "")
+        io_remove(self.resolve(path))
 
     proc make_dir(self, path):
-        io_mkdir(self.resolve(path))
+        let res = io_mkdir(self.resolve(path))
+        if not res:
+            raise "MD: Could not create directory " + path
 
     proc remove_dir(self, path):
-        io_remove(self.resolve(path))
+        let res = io_remove(self.resolve(path))
+        if not res:
+            raise "RD: Could not remove directory " + path
 
     proc list_dir(self, path):
         let res = self.resolve(path)

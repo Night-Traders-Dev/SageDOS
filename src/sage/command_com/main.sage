@@ -3,7 +3,7 @@
 #
 # If no script is given, enters interactive command-line mode.
 # Phases: 0 (repo) ✓  1 (lexer) ✓  2 (parser) ✓  3 (interpreter) ✓
-#         4 (env) ✓   5 (commands) ✓  6 (redirect) ✓  7 (pipes) partial
+#         4 (env) ✓   5 (commands) ✓  6 (redirect) ✓  7 (pipes) ✓
 
 from token       import Token, TOK_WORD, TOK_STRING, TOK_VARIABLE, TOK_LABEL, TOK_OPERATOR, TOK_REDIRECT, TOK_PIPE, TOK_NEWLINE, TOK_EOF, TOK_AMP, TOK_PAREN_L, TOK_PAREN_R, TOK_AT
 from process     import BatchProcess
@@ -44,5 +44,20 @@ class CommandCom:
             catch e:
                 print "Error: " + str(e)
 
+    proc run_script(self, process):
+        let source = io_readfile(process.script_path)
+        if source == nil:
+            print "SageBatch: File not found: " + process.script_path
+            return
+        let interp  = Interpreter(process)
+        let lexer   = Lexer(source)
+        let tokens  = lexer.tokenize()
+        let parser  = Parser(tokens)
+        let ast     = parser.parse()
+        interp.run_program(ast)
+
     proc run(self, process):
-        self.run_interactive(process)
+        if process.script_path == "INTERACTIVE":
+            self.run_interactive(process)
+        else:
+            self.run_script(process)

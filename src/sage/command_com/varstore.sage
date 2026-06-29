@@ -46,6 +46,8 @@ class VarStore:
         let result = ""
         let i = 0
         let pct = "%"
+        let excl = "!"
+        let is_delayed = self.env.delayed_expansion
         while i < len(text):
             let ch = text[i]
             if ch == pct:
@@ -53,6 +55,20 @@ class VarStore:
                 while j < len(text):
                     let ch2 = text[j]
                     if ch2 == pct:
+                        break
+                    j = j + 1
+                if j < len(text):
+                    let vname = slice(text, i + 1, j)
+                    result = result + self.get(vname)
+                    i = j + 1
+                else:
+                    result = result + ch
+                    i = i + 1
+            elif is_delayed and ch == excl:
+                let j = i + 1
+                while j < len(text):
+                    let ch2 = text[j]
+                    if ch2 == excl:
                         break
                     j = j + 1
                 if j < len(text):

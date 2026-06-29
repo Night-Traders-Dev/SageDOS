@@ -21,6 +21,7 @@ class Token:
         self.kind  = kind
         self.value = value
         self.line  = line
+        self.is_delayed = false
 
     proc __str__(self):
         return "Token(" + self.kind + ", " + str(self.value) + ", line=" + str(self.line) + ")"

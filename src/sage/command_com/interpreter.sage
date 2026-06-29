@@ -103,13 +103,29 @@ class Interpreter:
         if ntype == "Assignment":
             let name = node.name
             let is_arith = false
-            if startswith(name, "/A "):
-                name = strip(slice(name, 3, len(name)))
+            let is_prompt = false
+            if len(name) > 2 and slice(name, 0, 2) == "/A":
+                let name_tmp = slice(name, 2, len(name))
+                name = strip(name_tmp)
                 is_arith = true
+            elif len(name) > 2 and slice(name, 0, 2) == "/P":
+                let name_tmp = slice(name, 2, len(name))
+                name = strip(name_tmp)
+                is_prompt = true
             
             let c = self.ctx
             let v = c.vars
             let val = v.expand(node.value)
+            
+            if is_prompt:
+                c.write_out(val)
+                let user_input = c.read_line()
+                if user_input == nil:
+                    user_input = ""
+                v.set(name, user_input)
+                let env = c.env
+                env.set_errorlevel(0)
+                return 0
             
             if is_arith:
                 let op_idx = -1
@@ -123,8 +139,10 @@ class Interpreter:
                         break
                     i = i + 1
                 if op_idx != -1:
-                    let left = strip(slice(val, 0, op_idx))
-                    let right = strip(slice(val, op_idx + 1, len(val)))
+                    let left_tmp = slice(val, 0, op_idx)
+                    let right_tmp = slice(val, op_idx + 1, len(val))
+                    let left = strip(left_tmp)
+                    let right = strip(right_tmp)
                     
                     let left_val = v.get(left)
                     if left_val != "" and left_val != nil: left = left_val
@@ -210,7 +228,7 @@ class Interpreter:
             let filename = v.expand(node.filename)
             let old_stdout = c.stdout
             if node.op == ">":
-                io_writefile(filename, "")
+                c.fs.write_file(filename, "")
                 c.stdout = filename
             elif node.op == ">>":
                 c.stdout = filename
@@ -219,9 +237,26 @@ class Interpreter:
             return ret
 
         if ntype == "PipeNode":
+            let c = self.ctx
+            let saved_capture = c.capture_mode
+            let saved_buffer = c.capture_buffer
+            c.capture_mode = true
+            let arr = []
+            c.capture_buffer = arr
             let ret1 = self.exec_node(node.left)
-            if type(ret1) == "dict" and dict_has(ret1, "__signal"): return ret1
-            return self.exec_node(node.right)
+            c.capture_mode = saved_capture
+            let pipe_output = c.capture_buffer
+            c.capture_buffer = saved_buffer
+            if type(ret1) == "dict" and dict_has(ret1, "__signal"):
+                return ret1
+            let saved_lines = c.pipe_lines
+            let saved_index = c.pipe_index
+            c.pipe_lines = pipe_output
+            c.pipe_index = 0
+            let ret2 = self.exec_node(node.right)
+            c.pipe_lines = saved_lines
+            c.pipe_index = saved_index
+            return ret2
 
         if ntype == "Command":
             let args = self.expand_args(node.args)
@@ -250,7 +285,7 @@ class Interpreter:
         self.build_label_table(program)
         let ip = 0
         while true:
-            if ip >= len(self.stmts):
+            if ip >= len(program.statements):
                 let frame = self.process.pop_call()
                 if frame != nil:
                     ip = frame["ip"] + 1

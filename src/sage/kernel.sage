@@ -25,8 +25,16 @@ class SageDOSKernel:
     proc execute_shell(self):
         self.io.print_string("Loading COMMAND.COM (SageBatch)...\n")
         
+        let mode = "INTERACTIVE"
+        let args = []
+        let sys_args = sys.args()
+        if len(sys_args) > 1:
+            mode = sys_args[1]
+            if len(sys_args) > 2:
+                args = slice(sys_args, 2, len(sys_args))
+        
         let shell = CommandCom()
-        let proc_inst = BatchProcess("INTERACTIVE", [])
+        let proc_inst = BatchProcess(mode, args)
         shell.run(proc_inst)
                 
     proc shutdown(self):
