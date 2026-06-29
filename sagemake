@@ -422,6 +422,32 @@ def cmd_run(args: list[str]) -> None:
         subprocess.run([str(SAGE_BIN), str(entrypoint)], env=sage_env())
 
 
+def cmd_build_doom(args):
+    """Build the SageDoom engine as a standalone binary."""
+    banner("build-doom — SageDoom")
+    check_dependencies()
+    
+    doom_src = SRC_SAGE / "sagedoom" / "sagedoom.sage"
+    section("Source verification")
+    step(f"checking {doom_src}")
+    if not doom_src.exists():
+        step_fail(f"{doom_src} not found")
+    ok()
+
+    binary = BUILD_DIR / "sagedoom"
+    section("Compilation (SageLang C backend)")
+    step(f"compiling SageDoom → {binary.name}")
+
+    cmd = [str(SAGE_BIN), "--compile", str(doom_src), "-o", str(binary)]
+    try:
+        subprocess.run(cmd, check=True, env=sage_env())
+        ok()
+        step(f"binary: {binary} ({binary.stat().st_size} bytes)")
+    except subprocess.CalledProcessError:
+        step_warn("AOT compilation failed — use sage interpreter instead")
+        step("  sage src/sage/sagedoom/sagedoom.sage")
+
+
 # ── CLI dispatch ─────────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -433,6 +459,7 @@ def main() -> None:
         print("  Flags:")
         print("    --clean          Remove build artifacts")
         print("    --build          Compile SageDOS to a native ELF")
+        print("    --build-doom     Compile SageDoom standalone")
         print("    --run            Run SageDOS")
         print("    --test           Run the test suite")
         print("    --debug          Build with SAGE_DEBUG")
@@ -444,6 +471,8 @@ def main() -> None:
         cmd_clean(args)
     if "--build" in args:
         cmd_build(args)
+    if "--build-doom" in args:
+        cmd_build_doom(args)
     if "--test" in args:
         cmd_test(args)
     if "--run" in args:

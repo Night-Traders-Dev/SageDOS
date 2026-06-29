@@ -3,7 +3,7 @@
 # them as external (to be found on PATH).
 # Phase 5: Internal command dispatch table.
 
-from commands import cmd_echo, cmd_rem, cmd_set, cmd_pause, cmd_cls, cmd_exit, cmd_cd, cmd_md, cmd_rd, cmd_dir, cmd_type, cmd_copy, cmd_move, cmd_del, cmd_ren, cmd_shift, cmd_ver, cmd_help, cmd_title, cmd_color, cmd_prompt, cmd_date, cmd_time, cmd_vol, cmd_verify, cmd_pushd, cmd_popd, cmd_path, cmd_break, cmd_chcp, cmd_setlocal, cmd_endlocal
+from commands import cmd_echo, cmd_rem, cmd_set, cmd_pause, cmd_cls, cmd_exit, cmd_cd, cmd_md, cmd_rd, cmd_dir, cmd_type, cmd_copy, cmd_move, cmd_del, cmd_ren, cmd_shift, cmd_ver, cmd_help, cmd_title, cmd_color, cmd_prompt, cmd_date, cmd_time, cmd_vol, cmd_verify, cmd_pushd, cmd_popd, cmd_path, cmd_break, cmd_chcp, cmd_setlocal, cmd_endlocal, cmd_doom
 
 class CommandRegistry:
     proc init(self, ctx):
@@ -46,6 +46,7 @@ class CommandRegistry:
         self.handlers["CHCP"] = cmd_chcp
         self.handlers["SETLOCAL"] = cmd_setlocal
         self.handlers["ENDLOCAL"] = cmd_endlocal
+        self.handlers["DOOM"] = cmd_doom
 
     proc is_internal(self, name):
         let key = upper(name)
@@ -90,6 +91,7 @@ class CommandRegistry:
         if key == "CHCP": return cmd_chcp(self.ctx, args)
         if key == "SETLOCAL": return cmd_setlocal(self.ctx, args)
         if key == "ENDLOCAL": return cmd_endlocal(self.ctx, args)
+        if key == "DOOM": return cmd_doom(self.ctx, args)
 
         # External execution
         let cmd = name

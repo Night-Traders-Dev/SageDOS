@@ -313,7 +313,7 @@ proc cmd_help(ctx, args):
     ctx.write_out("SageBatch internal commands:")
     ctx.write_out("  ECHO SET REM PAUSE CLS EXIT CD MD RD DIR TYPE COPY MOVE DEL REN SHIFT VER")
     ctx.write_out("  IF FOR GOTO CALL TITLE COLOR PROMPT DATE TIME VOL VERIFY PUSHD POPD")
-    ctx.write_out("  PATH BREAK CHCP")
+    ctx.write_out("  PATH BREAK CHCP SETLOCAL ENDLOCAL DOOM")
     return 0
 
 # ------------------------------------------------------------------ PATH / BREAK / CHCP
@@ -359,3 +359,14 @@ proc cmd_setlocal(ctx, args):
 proc cmd_endlocal(ctx, args):
     ctx.env.endlocal()
     return 0
+
+# ------------------------------------------------------------------ DOOM
+
+proc cmd_doom(ctx, args):
+    ctx.write_out("Launching SageDoom...")
+    let sage_bin = "./deps/SageLang/core/sage"
+    let doom_src = "src/sage/sagedoom/sagedoom.sage"
+    if not io_exists(doom_src):
+        ctx.write_out("SageDoom source not found: " + doom_src)
+        return 1
+    return sys_exec(sage_bin + " " + doom_src)
