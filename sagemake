@@ -448,6 +448,62 @@ def cmd_build_doom(args):
         step("  sage src/sage/sagedoom/sagedoom.sage")
 
 
+def cmd_build_vm(args):
+    """Compile SageDOS to SageVM bytecode (.sgvm binary)."""
+    banner("build-vm — SageDOS → SageVM")
+    check_dependencies()
+    
+    entrypoint = SRC_SAGE / "boot.sage"
+    output_sgvm = BUILD_DIR / "sagedos.sgvm"
+
+    section("Compilation (SageLang → SVM bytecode)")
+    step(f"compiling {entrypoint.name} → {output_sgvm.name}")
+
+    # 1. Emit SVM text format
+    svm_tmp = BUILD_DIR / "sagedos.svm"
+    cmd_emit = [str(SAGE_BIN), "--emit-vm", str(entrypoint), "-o", str(svm_tmp)]
+    try:
+        subprocess.run(cmd_emit, check=True, env=sage_env())
+        step(f".svm intermediate: {svm_tmp.name}")
+        ok()
+    except subprocess.CalledProcessError:
+        step_fail("--emit-vm failed")
+    
+    # 2. Convert .svm → .sgvm binary
+    step(f"assembling {svm_tmp.name} → {output_sgvm.name}")
+    svm_text = svm_tmp.read_text()
+    
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(PROJECT_ROOT / "deps" / "SageVM" / "src" / "svm"))
+        _sys.path.insert(0, str(PROJECT_ROOT / "deps" / "SageVM" / "src"))
+    except Exception:
+        pass
+    
+    # Run sgvm_compiler via Sage interpreter on the .svm file
+    sagevm_compiler = PROJECT_ROOT / "deps" / "SageVM" / "src" / "svm" / "sgvm_compiler.sage"
+    sgvm_cli = PROJECT_ROOT / "deps" / "SageVM" / "src" / "sgvm_cli.sage"
+    sagevm_bin = PROJECT_ROOT / "deps" / "SageVM" / "sagevm"
+    
+    if sgvm_cli.exists():
+        cmd_assemble = [str(SAGE_BIN), str(sgvm_cli), "compile", str(svm_tmp), str(output_sgvm)]
+    elif sagevm_bin.exists():
+        cmd_assemble = [str(sagevm_bin), "compile", str(svm_tmp), str(output_sgvm)]
+    else:
+        step_warn("SageVM tools not found — skipping .sgvm assembly")
+        step("  Run: cd deps/SageVM && ./sagemake build")
+        return
+    
+    try:
+        subprocess.run(cmd_assemble, check=True, env=sage_env())
+        ok()
+        step(f"sgvm binary: {output_sgvm} ({output_sgvm.stat().st_size} bytes)")
+        print()
+        step("Run with:  sage --run-vm build/sagedos.sgvm")
+    except subprocess.CalledProcessError:
+        step_warn("SGVM assembly failed — try: cd deps/SageVM && ./sagemake build")
+
+
 # ── CLI dispatch ─────────────────────────────────────────────────────────────────────────
 
 def main() -> None:
@@ -459,6 +515,7 @@ def main() -> None:
         print("  Flags:")
         print("    --clean          Remove build artifacts")
         print("    --build          Compile SageDOS to a native ELF")
+        print("    --build-vm       Compile SageDOS to SageVM bytecode (.sgvm)")
         print("    --build-doom     Compile SageDoom standalone")
         print("    --run            Run SageDOS")
         print("    --test           Run the test suite")
@@ -471,6 +528,8 @@ def main() -> None:
         cmd_clean(args)
     if "--build" in args:
         cmd_build(args)
+    if "--build-vm" in args:
+        cmd_build_vm(args)
     if "--build-doom" in args:
         cmd_build_doom(args)
     if "--test" in args:
